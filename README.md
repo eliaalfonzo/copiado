@@ -6,9 +6,12 @@ El sistema permite administrar clientes, productos y servicios, registrar ventas
 
 La aplicación funciona sin una base de datos ni un backend propio, utilizando almacenamiento local del navegador y una arquitectura hexagonal para mantener separadas las reglas de negocio, los casos de uso, la infraestructura y la interfaz.
 
-## Demo
+## Aplicación en línea
 
-**Enlace de la aplicación:** [https://copiado.vercel.app]
+Puedes acceder y probar el sistema directamente desde el siguiente enlace:
+
+🌐 **[Copiado](https://copiado.vercel.app)**
+
 
 ## Tecnologías
 

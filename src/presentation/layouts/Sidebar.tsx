@@ -10,8 +10,6 @@ export function Sidebar() {
     <aside
       className="sidebar-desktop"
       style={{
-        width: 'var(--nav-width)',
-        flexShrink: 0,
         borderRight: '1px solid var(--color-border)',
         background: 'var(--color-surface)',
         display: 'flex',
@@ -66,12 +64,6 @@ export function Sidebar() {
       <div style={{ marginTop: 'auto', textAlign: 'center', fontSize: 11, color: 'var(--color-text-muted)' }}>
         Desarrollado por Elia
       </div>
-
-      <style>{`
-        @media (max-width: 860px) {
-          .sidebar-desktop { display: none; }
-        }
-      `}</style>
     </aside>
   );
 }

@@ -19,8 +19,8 @@ export function Header({ title, subtitle, onOpenMenu }: HeaderProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 12,
-        padding: '14px 28px',
+        gap: 10,
+        padding: '12px 16px',
         borderBottom: '1px solid var(--color-border)',
         background: 'var(--color-surface)',
         position: 'sticky',
@@ -28,13 +28,13 @@ export function Header({ title, subtitle, onOpenMenu }: HeaderProps) {
         zIndex: 50,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
         <button
-          className="menu-button"
+          type="button"
+          className="header-menu-button"
           onClick={onOpenMenu}
           aria-label="Abrir menu de navegacion"
           style={{
-            display: 'none',
             alignItems: 'center',
             justifyContent: 'center',
             width: 38,
@@ -50,20 +50,39 @@ export function Header({ title, subtitle, onOpenMenu }: HeaderProps) {
           <Menu size={19} />
         </button>
 
-        <div className="header-logo" style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           {settings?.logoDataUrl ? (
-            <img src={settings.logoDataUrl} alt={settings.name} style={{ height: 44, objectFit: 'contain', borderRadius: 6 }} />
+            <img src={settings.logoDataUrl} alt={settings.name} style={{ height: 36, objectFit: 'contain', borderRadius: 6 }} />
           ) : (
-            <LoadingLogo size={38} />
+            <LoadingLogo size={32} />
           )}
         </div>
 
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 16,
+              fontWeight: 800,
+              color: 'var(--color-text)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
             {title}
           </h1>
           {subtitle && (
-            <p style={{ margin: 0, fontSize: 12, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 11.5,
+                color: 'var(--color-text-secondary)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
               {subtitle}
             </p>
           )}
@@ -89,12 +108,6 @@ export function Header({ title, subtitle, onOpenMenu }: HeaderProps) {
       >
         {mode === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
       </button>
-
-      <style>{`
-        @media (max-width: 860px) {
-          .menu-button { display: flex !important; }
-        }
-      `}</style>
     </header>
   );
 }

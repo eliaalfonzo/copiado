@@ -65,6 +65,7 @@ body {
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s ease, color 0.2s ease;
+  overflow-x: hidden;
 }
 
 button,
@@ -133,4 +134,96 @@ a {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* ============================================================
+   Navegacion (sidebar / header / bottom nav / drawer movil)
+   TODO el CSS responsivo de navegacion vive aqui, centralizado,
+   para evitar reglas repartidas entre componentes que puedan
+   pisarse o quedar inconsistentes entre si.
+   ============================================================ */
+
+.sidebar-desktop {
+  width: var(--nav-width);
+  flex-shrink: 0;
+  min-width: var(--nav-width);
+}
+
+.header-menu-button {
+  display: none;
+}
+
+.bottom-nav {
+  display: none;
+}
+
+/* Bloquea el scroll del fondo mientras el drawer movil esta abierto,
+   para que no se vea contenido "brincando" o solapado detras del menu. */
+body.drawer-open {
+  overflow: hidden;
+}
+
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 5, 10, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 900;
+}
+
+.drawer-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.drawer-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 82vw;
+  max-width: 320px;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding: 18px 16px 24px;
+  z-index: 950;
+  transform: translateX(-100%);
+  transition: transform 0.22s ease;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: var(--shadow-elevated);
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-panel.is-open {
+  transform: translateX(0);
+}
+
+@media (max-width: 860px) {
+  .sidebar-desktop {
+    display: none;
+  }
+
+  .header-menu-button {
+    display: inline-flex !important;
+  }
+
+  .bottom-nav {
+    display: block;
+  }
+}
+
+/* En pantallas de escritorio, el drawer y su overlay nunca deben
+   ocupar espacio ni interceptar clics, sin importar su estado. */
+@media (min-width: 861px) {
+
+  .drawer-overlay,
+  .drawer-panel {
+    display: none !important;
+  }
 }

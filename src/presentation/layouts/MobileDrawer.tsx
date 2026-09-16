@@ -11,11 +11,16 @@ interface MobileDrawerProps {
 }
 
 /**
- * Menu desplegable (drawer) responsivo para navegacion completa en
- * pantallas pequenas. Muestra TODOS los items de navegacion (a
- * diferencia del bottom nav, que solo tiene espacio para unos pocos
- * accesos rapidos). Se abre desde el boton de menu en el Header y se
- * cierra al elegir una opcion, tocar fuera, o presionar Escape.
+ * Menu desplegable (drawer) para navegacion completa en pantallas
+ * pequenas: muestra TODOS los items de navegacion (a diferencia del
+ * bottom nav, que solo tiene espacio para los accesos rapidos). Se
+ * abre desde el boton de menu en el Header o el boton "Mas" del bottom
+ * nav, y se cierra al elegir una opcion, tocar fuera, o Escape.
+ *
+ * Todo el CSS responsivo (posicion, animacion, que se oculte en
+ * escritorio) vive centralizado en theme.css bajo las clases
+ * .drawer-overlay / .drawer-panel, para evitar reglas repartidas entre
+ * componentes que puedan pisarse entre si.
  */
 export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   const { settings } = useSettings();
@@ -32,29 +37,33 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   return (
     <>
       <div
-        className={`drawer-overlay ${open ? 'drawer-overlay-open' : ''}`}
+        className={`drawer-overlay${open ? ' is-open' : ''}`}
         onClick={onClose}
         aria-hidden={!open}
       />
       <div
-        className={`drawer-panel ${open ? 'drawer-panel-open' : ''}`}
+        className={`drawer-panel${open ? ' is-open' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label="Menu de navegacion"
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
             {settings?.logoDataUrl ? (
-              <img src={settings.logoDataUrl} alt={settings.name} style={{ maxHeight: 58, maxWidth: '90%', objectFit: 'contain', borderRadius: 8 }} />
+              <img
+                src={settings.logoDataUrl}
+                alt={settings.name}
+                style={{ maxHeight: 52, maxWidth: '100%', objectFit: 'contain', borderRadius: 8 }}
+              />
             ) : (
-              <LoadingLogo size={48} />
+              <LoadingLogo size={44} />
             )}
           </div>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Cerrar menu"
             style={{
-              marginLeft: 12,
               width: 36,
               height: 36,
               borderRadius: '50%',
@@ -98,28 +107,10 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
           ))}
         </nav>
 
-        <div style={{ marginTop: 24, textAlign: 'center', fontSize: 11, color: 'var(--color-text-muted)' }}>
+        <div style={{ marginTop: 'auto', paddingTop: 20, textAlign: 'center', fontSize: 11, color: 'var(--color-text-muted)' }}>
           Desarrollado por Elia
         </div>
       </div>
-
-      <style>{`
-        .drawer-overlay {
-          position: fixed; inset: 0; background: rgba(10, 5, 10, 0.55);
-          opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 800;
-        }
-        .drawer-overlay-open { opacity: 1; pointer-events: auto; }
-        .drawer-panel {
-          position: fixed; top: 0; left: 0; bottom: 0; width: 78vw; max-width: 320px;
-          background: var(--color-surface); border-right: 1px solid var(--color-border);
-          padding: 20px 16px; z-index: 850; transform: translateX(-100%);
-          transition: transform 0.22s ease; overflow-y: auto; box-shadow: var(--shadow-elevated);
-        }
-        .drawer-panel-open { transform: translateX(0); }
-        @media (min-width: 861px) {
-          .drawer-overlay, .drawer-panel { display: none; }
-        }
-      `}</style>
     </>
   );
 }

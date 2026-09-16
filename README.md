@@ -8,7 +8,7 @@ La aplicación funciona sin una base de datos ni un backend propio, utilizando a
 
 ## Demo
 
-**Enlace de la aplicación:** [enlace de la aplicación desplegada]
+**Enlace de la aplicación:** [https://copiado.vercel.app]
 
 ## Tecnologías
 

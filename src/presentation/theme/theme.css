@@ -137,28 +137,38 @@ a {
 }
 
 /* ============================================================
-   Navegacion (sidebar / header / bottom nav / drawer movil)
-   TODO el CSS responsivo de navegacion vive aqui, centralizado,
-   para evitar reglas repartidas entre componentes que puedan
-   pisarse o quedar inconsistentes entre si.
+   Navegacion
    ============================================================ */
 
 .sidebar-desktop {
   width: var(--nav-width);
-  flex-shrink: 0;
   min-width: var(--nav-width);
+  flex-shrink: 0;
+  overflow: hidden;
+  transition:
+    width 0.22s ease,
+    min-width 0.22s ease,
+    padding 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.sidebar-desktop.is-collapsed {
+  width: 0;
+  min-width: 0;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  border-right-color: transparent !important;
 }
 
 .header-menu-button {
-  display: none;
+  display: inline-flex;
 }
 
 .bottom-nav {
   display: none;
 }
 
-/* Bloquea el scroll del fondo mientras el drawer movil esta abierto,
-   para que no se vea contenido "brincando" o solapado detras del menu. */
+/* Bloquea el scroll del fondo mientras el drawer movil esta abierto. */
 body.drawer-open {
   overflow: hidden;
 }
@@ -204,9 +214,13 @@ body.drawer-open {
   transform: translateX(0);
 }
 
+/* ============================================================
+   Navegacion movil
+   ============================================================ */
+
 @media (max-width: 860px) {
   .sidebar-desktop {
-    display: none;
+    display: none !important;
   }
 
   .header-menu-button {
@@ -216,10 +230,17 @@ body.drawer-open {
   .bottom-nav {
     display: block;
   }
+
+  .app-content {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
-/* En pantallas de escritorio, el drawer y su overlay nunca deben
-   ocupar espacio ni interceptar clics, sin importar su estado. */
+/* ============================================================
+   En escritorio el drawer movil no se utiliza.
+   ============================================================ */
+
 @media (min-width: 861px) {
 
   .drawer-overlay,

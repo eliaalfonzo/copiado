@@ -12,15 +12,19 @@ interface MobileDrawerProps {
 
 /**
  * Menu desplegable (drawer) para navegacion completa en pantallas
- * pequenas: muestra TODOS los items de navegacion (a diferencia del
+ * pequenas. Muestra TODOS los items de navegacion (a diferencia del
  * bottom nav, que solo tiene espacio para los accesos rapidos). Se
  * abre desde el boton de menu en el Header o el boton "Mas" del bottom
  * nav, y se cierra al elegir una opcion, tocar fuera, o Escape.
  *
- * Todo el CSS responsivo (posicion, animacion, que se oculte en
- * escritorio) vive centralizado en theme.css bajo las clases
- * .drawer-overlay / .drawer-panel, para evitar reglas repartidas entre
- * componentes que puedan pisarse entre si.
+ * IMPORTANTE: el estado abierto/cerrado se aplica con `style` en
+ * linea (calculado en JS a partir de `open`), NO solo con una clase
+ * CSS. Esto es deliberado: un estilo en linea SIEMPRE se aplica de
+ * inmediato con el render, sin depender de que el navegador ya haya
+ * descargado/aplicado la hoja de estilos externa ni de el orden en
+ * que se cargan otras reglas. Asi se evita que el menu aparezca
+ * "abierto por defecto" si por cualquier motivo el CSS externo tarda,
+ * falla o queda en cache vieja.
  */
 export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   const { settings } = useSettings();
@@ -37,15 +41,43 @@ export function MobileDrawer({ open, onClose }: MobileDrawerProps) {
   return (
     <>
       <div
-        className={`drawer-overlay${open ? ' is-open' : ''}`}
         onClick={onClose}
         aria-hidden={!open}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(10, 5, 10, 0.6)',
+          zIndex: 900,
+          transition: 'opacity 0.2s ease',
+          opacity: open ? 1 : 0,
+          visibility: open ? 'visible' : 'hidden',
+          pointerEvents: open ? 'auto' : 'none',
+        }}
       />
       <div
-        className={`drawer-panel${open ? ' is-open' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label="Menu de navegacion"
+        aria-hidden={!open}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: '82vw',
+          maxWidth: 320,
+          background: 'var(--color-surface)',
+          borderRight: '1px solid var(--color-border)',
+          padding: '18px 16px 24px',
+          zIndex: 950,
+          overflowY: 'auto',
+          boxShadow: 'var(--shadow-elevated)',
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'transform 0.22s ease, visibility 0.22s ease',
+          transform: open ? 'translateX(0)' : 'translateX(-100%)',
+          visibility: open ? 'visible' : 'hidden',
+        }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>

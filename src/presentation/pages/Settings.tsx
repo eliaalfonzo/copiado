@@ -12,7 +12,7 @@ import { useTheme } from '@/presentation/theme/ThemeContext';
 import { useExchangeRate } from '@/presentation/hooks/useExchangeRate';
 import { DomainError } from '@/domain/errors/DomainError';
 import { APP_CONFIG } from '@/shared/constants/config';
-import { formatDate, formatDateTime, isWeekend } from '@/shared/utils/date';
+import { formatDate, formatDateTime } from '@/shared/utils/date';
 
 export function Settings() {
   const { settings, loading, updateSettings } = useSettings();
@@ -163,25 +163,26 @@ export function Settings() {
         </Card>
 
         <Card>
-          <h2 style={{ fontSize: 15, margin: '0 0 14px' }}>Tasa de cambio</h2>
+          <h2 style={{ fontSize: 15, margin: '0 0 14px' }}>Tasa de cambio oficial BCV</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, color: 'var(--color-text-secondary)', marginBottom: 16 }}>
             <span>
-              Estado: <strong style={{ color: 'var(--color-text)' }}>{translateStatus(status)}</strong>
-              {status === 'manual' && <Badge tone="brand">Manual</Badge>}
+              Valor actual: <strong style={{ color: 'var(--color-brand-secondary)', fontSize: 15 }}>
+                {rate ? `$1 = ${rate.rate.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.` : '—'}
+              </strong>
             </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>Estado: <strong style={{ color: 'var(--color-text)' }}>{translateStatus(status)}</strong></span>
+              {status === 'manual' && <Badge tone="brand">Manual</Badge>}
+              {status === 'updated' && <Badge tone="success">En vivo</Badge>}
+            </div>
             <span>
               {rate?.isManual ? 'Fijada el' : 'Fecha oficial BCV'}:{' '}
               <strong style={{ color: 'var(--color-text)' }}>
                 {rate ? (rate.isManual ? formatDateTime(rate.fetchedAt) : formatDate(rate.officialDate)) : '—'}
               </strong>
             </span>
-            {rate && !rate.isManual && isWeekend(rate.officialDate) && (
-              <span style={{ color: 'var(--color-warning)', fontSize: 12.5 }}>
-                El BCV no emite tasa los fines de semana; se muestra la ultima vigente, no la de hoy.
-              </span>
-            )}
-            <span>Proveedor: <strong style={{ color: 'var(--color-text)' }}>{rate?.source ?? '—'}</strong></span>
-            <span>Frecuencia de actualizacion automatica: <strong style={{ color: 'var(--color-text)' }}>cada {APP_CONFIG.exchangeRateRefreshMinutes} minutos</strong></span>
+            <span>Proveedor activo: <strong style={{ color: 'var(--color-text)' }}>{rate?.source ?? '—'}</strong></span>
+            <span>Frecuencia de actualización: <strong style={{ color: 'var(--color-text)' }}>cada {APP_CONFIG.exchangeRateRefreshMinutes} min (cada 2 min de 4 a 6pm)</strong></span>
           </div>
 
           <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>

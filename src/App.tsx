@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@/presentation/theme/ThemeContext';
 import { ToastProvider } from '@/presentation/components/ToastContext';
+import { ExchangeRateProvider } from '@/presentation/context/ExchangeRateContext';
 import { AppRoutes } from '@/presentation/routes/AppRoutes';
 import { container } from '@/infrastructure/container';
 import { LoadingLogo } from '@/presentation/components/LoadingLogo';
@@ -36,9 +37,11 @@ export default function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <ExchangeRateProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ExchangeRateProvider>
       </ToastProvider>
     </ThemeProvider>
   );

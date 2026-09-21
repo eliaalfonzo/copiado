@@ -12,7 +12,6 @@ import {
   PackagePlus,
   AlertTriangle,
   CheckCircle2,
-  Info,
 } from 'lucide-react';
 import { MainLayout } from '@/presentation/layouts/MainLayout';
 import { Card } from '@/presentation/components/Card';
@@ -24,7 +23,7 @@ import { useExchangeRate } from '@/presentation/hooks/useExchangeRate';
 import { useSales } from '@/presentation/hooks/useSales';
 import { useMonthlyPeriod } from '@/presentation/hooks/useMonthlyPeriod';
 import { formatUsd, formatBs } from '@/shared/utils/money';
-import { formatDate, formatDateTime, getMonthlyPeriodLabel, isSameCalendarDay } from '@/shared/utils/date';
+import { formatDate, formatDateTime, getMonthlyPeriodLabel } from '@/shared/utils/date';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -63,47 +62,41 @@ export function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)' }}>TASA ACTUAL</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)' }}>TASA OFICIAL BCV</span>
                 {status === 'updated' && (
                   <Badge tone="success">
                     <CheckCircle2 size={12} /> Conectado en vivo
                   </Badge>
                 )}
                 {status === 'loading' && <Badge tone="neutral">Consultando...</Badge>}
-                {status === 'stale' && <Badge tone="warning">Ultima tasa valida (sin conexion)</Badge>}
+                {status === 'stale' && <Badge tone="warning">Última tasa válida (sin conexión)</Badge>}
                 {status === 'manual' && <Badge tone="brand">Tasa manual activa</Badge>}
-                {status === 'error' && <Badge tone="danger">Error de conexion</Badge>}
+                {status === 'error' && <Badge tone="danger">Error de conexión</Badge>}
               </div>
               {rate ? (
-                <p style={{ margin: 0, fontSize: 30, fontWeight: 800, color: 'var(--color-brand-secondary)' }}>
-                  $1 = {rate.rate.toLocaleString('es-VE', { minimumFractionDigits: 2 })} Bs.
+                <p style={{ margin: 0, fontSize: 32, fontWeight: 800, color: 'var(--color-brand-secondary)' }}>
+                  $1 = {rate.rate.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.
                 </p>
               ) : (
-                <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>Sin datos aun</p>
+                <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>Sin datos aún</p>
               )}
 
               {rate && !rate.isManual && (
-                <div style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <span>
-                    Ultima verificacion en vivo: <strong style={{ color: 'var(--color-text)' }}>{formatDateTime(rate.fetchedAt)}</strong>
+                    Proveedor: <strong style={{ color: 'var(--color-text)' }}>{rate.source}</strong>
                   </span>
                   <span>
-                    Tasa vigente segun el BCV desde: <strong style={{ color: 'var(--color-text)' }}>{formatDate(rate.officialDate)}</strong>
+                    Última sincronización en vivo: <strong style={{ color: 'var(--color-text)' }}>{formatDateTime(rate.fetchedAt)}</strong>
+                  </span>
+                  <span>
+                    Fecha valor oficial BCV: <strong style={{ color: 'var(--color-text)' }}>{formatDate(rate.officialDate)}</strong>
                   </span>
                 </div>
               )}
               {rate && rate.isManual && (
                 <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--color-text-muted)' }}>
-                  Tasa fijada manualmente. Puede administrarla desde Configuracion.
-                </p>
-              )}
-
-              {rate && !rate.isManual && !isSameCalendarDay(rate.officialDate, new Date()) && (
-                <p style={{ margin: '6px 0 0', fontSize: 11.5, color: 'var(--color-warning)', display: 'flex', alignItems: 'flex-start', gap: 5, maxWidth: 420 }}>
-                  <Info size={13} style={{ flexShrink: 0, marginTop: 1 }} />
-                  El BCV aun no ha publicado una tasa nueva hoy (no publica todos los dias, especialmente fines
-                  de semana y feriados). Esta es la ultima oficialmente vigente; la app ya verifico en vivo y se
-                  actualizara sola en cuanto el BCV publique una nueva.
+                  Tasa fijada manualmente. Puede administrarla desde Configuración.
                 </p>
               )}
               {!rate && errorMessage && (

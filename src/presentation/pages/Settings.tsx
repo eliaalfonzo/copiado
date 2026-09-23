@@ -163,26 +163,42 @@ export function Settings() {
         </Card>
 
         <Card>
-          <h2 style={{ fontSize: 15, margin: '0 0 14px' }}>Tasa de cambio oficial BCV</h2>
+          <h2 style={{ fontSize: 15, margin: '0 0 14px' }}>Tasa de cambio</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13.5, color: 'var(--color-text-secondary)', marginBottom: 16 }}>
             <span>
-              Valor actual: <strong style={{ color: 'var(--color-brand-secondary)', fontSize: 15 }}>
-                {rate ? `$1 = ${rate.rate.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.` : '—'}
-              </strong>
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>Estado: <strong style={{ color: 'var(--color-text)' }}>{translateStatus(status)}</strong></span>
+              Estado: <strong style={{ color: 'var(--color-text)' }}>{translateStatus(status)}</strong>
               {status === 'manual' && <Badge tone="brand">Manual</Badge>}
-              {status === 'updated' && <Badge tone="success">En vivo</Badge>}
-            </div>
+            </span>
             <span>
-              {rate?.isManual ? 'Fijada el' : 'Fecha oficial BCV'}:{' '}
+              Tasa activa: <strong style={{ color: 'var(--color-text)' }}>{rate ? `${rate.rate.toLocaleString('es-VE', { minimumFractionDigits: 4 })} Bs.` : '—'}</strong>
+            </span>
+            {rate && typeof rate.previousRate === 'number' && (
+              <span>
+                Tasa anterior: <strong style={{ color: 'var(--color-text)' }}>{rate.previousRate.toLocaleString('es-VE', { minimumFractionDigits: 4 })} Bs.</strong>
+                {typeof rate.changePercentage === 'number' && (
+                  <span style={{ color: (rate.changeAmount ?? 0) >= 0 ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 700 }}>
+                    {' '}
+                    ({(rate.changeAmount ?? 0) >= 0 ? '+' : ''}
+                    {rate.changePercentage.toLocaleString('es-VE', { maximumFractionDigits: 2 })}%)
+                  </span>
+                )}
+              </span>
+            )}
+            <span>
+              {rate?.isManual ? 'Fijada el' : 'Fecha valor BCV'}:{' '}
               <strong style={{ color: 'var(--color-text)' }}>
                 {rate ? (rate.isManual ? formatDateTime(rate.fetchedAt) : formatDate(rate.officialDate)) : '—'}
               </strong>
+              {rate && !rate.isManual && rate.isNextDayRate && <Badge tone="brand">Proximo dia habil</Badge>}
             </span>
-            <span>Proveedor activo: <strong style={{ color: 'var(--color-text)' }}>{rate?.source ?? '—'}</strong></span>
-            <span>Frecuencia de actualización: <strong style={{ color: 'var(--color-text)' }}>cada {APP_CONFIG.exchangeRateRefreshMinutes} min (cada 2 min de 4 a 6pm)</strong></span>
+            {rate && !rate.isManual && rate.isNextDayRate && (
+              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                El BCV publico esta tasa para el siguiente dia habil, pero ya esta en vigencia comercial desde
+                hoy y esta app ya la esta usando en todos los calculos, sin esperar al cambio de fecha.
+              </span>
+            )}
+            <span>Proveedor: <strong style={{ color: 'var(--color-text)' }}>{rate?.source ?? '—'}</strong></span>
+            <span>Frecuencia de actualizacion automatica: <strong style={{ color: 'var(--color-text)' }}>cada {APP_CONFIG.exchangeRateRefreshMinutes} minutos, y al abrir la app</strong></span>
           </div>
 
           <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>

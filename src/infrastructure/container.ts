@@ -4,7 +4,10 @@ import { LocalStorageProductRepository } from './persistence/LocalStorageProduct
 import { LocalStorageSaleRepository } from './persistence/LocalStorageSaleRepository';
 import { LocalStorageSettingsRepository } from './persistence/LocalStorageSettingsRepository';
 import { seedInitialData } from './persistence/seedData';
-import { ExchangeRateApiAdapter } from './exchange-rate/ExchangeRateApiAdapter';
+import { BcvTodayProvider } from './exchange-rate/BcvTodayProvider';
+import { PyDolarVeProvider } from './exchange-rate/PyDolarVeProvider';
+import { DolarApiProvider } from './exchange-rate/DolarApiProvider';
+import { CompositeExchangeRateProvider } from './exchange-rate/CompositeExchangeRateProvider';
 import { JsPdfGeneratorAdapter } from './pdf/JsPdfGeneratorAdapter';
 import { XlsxExporterAdapter } from './excel/XlsxExporterAdapter';
 
@@ -58,7 +61,11 @@ class Container {
   readonly saleRepository = new LocalStorageSaleRepository(this.storage);
   readonly settingsRepository = new LocalStorageSettingsRepository(this.storage);
 
-  readonly exchangeRateProvider = new ExchangeRateApiAdapter();
+  readonly exchangeRateProvider = new CompositeExchangeRateProvider([
+    new BcvTodayProvider(),
+    new PyDolarVeProvider(),
+    new DolarApiProvider(),
+  ]);
   readonly pdfGenerator = new JsPdfGeneratorAdapter();
   readonly excelExporter = new XlsxExporterAdapter();
 

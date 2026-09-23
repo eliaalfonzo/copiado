@@ -12,6 +12,18 @@ export function getMonthlyPeriodKey(date: Date = new Date()): string {
   return `${year}-${month}`;
 }
 
+/**
+ * Dado un periodo "AAAA-MM", devuelve el periodo del mes calendario
+ * inmediatamente anterior (maneja correctamente el cambio de ano,
+ * ej: "2026-01" -> "2025-12").
+ */
+export function getPreviousPeriodKey(periodKey: string): string {
+  const [year, month] = periodKey.split('-').map(Number);
+  const date = new Date(year, month - 1, 1);
+  date.setMonth(date.getMonth() - 1);
+  return getMonthlyPeriodKey(date);
+}
+
 export function getMonthlyPeriodLabel(periodKey: string): string {
   const [year, month] = periodKey.split('-').map(Number);
   const date = new Date(year, month - 1, 1);
@@ -61,4 +73,26 @@ export function isWeekend(date: Date | string): boolean {
  */
 export function isSameCalendarDay(a: Date | string, b: Date | string): boolean {
   return getDayKey(a) === getDayKey(b);
+}
+
+/**
+ * Fecha de "hoy" en zona horaria de Venezuela (America/Caracas),
+ * en formato AAAA-MM-DD. Se usa para comparar correctamente contra la
+ * "Fecha Valor" que publica el BCV, sin importar en que zona horaria
+ * este el navegador de quien use la aplicacion.
+ */
+export function getVenezuelaTodayKey(): string {
+  // en-CA produce directamente el formato AAAA-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Caracas' }).format(new Date());
+}
+
+/**
+ * true si la fecha oficial de una tasa (su "Fecha Valor") es POSTERIOR
+ * al dia actual en Venezuela: es decir, el BCV ya publico la tasa del
+ * siguiente dia habil. Esto es solo informativo para la interfaz; la
+ * tasa se usa de inmediato en los calculos sin importar este valor.
+ */
+export function isRateForFutureDate(officialDate: string): boolean {
+  const officialDayKey = officialDate.slice(0, 10);
+  return officialDayKey > getVenezuelaTodayKey();
 }

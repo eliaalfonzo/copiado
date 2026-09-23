@@ -7,48 +7,67 @@ import { DomainError } from '@/domain/errors/DomainError';
 
 /**
  * Servicio de dominio responsable UNICAMENTE del calculo de una linea
- * de venta (SRP). No sabe nada de almacenamiento, PDF, Excel ni React.
+ * de venta (SRP).
  *
- * Si el producto tiene una promocion activa y la cantidad solicitada es
- * multiplo de la cantidad requerida por la promocion, se aplica el
- * precio promocional; el resto de unidades (si las hay) se cobra al
- * precio unitario normal de la variante.
+ * No sabe nada de almacenamiento, PDF, Excel ni React.
+ *
+ * Las promociones se aplican EXPLICITAMENTE cuando el usuario selecciona
+ * la modalidad promocional.
  */
 export class SaleCalculator {
-  static calculateLine(product: Product, variant: ProductVariant, quantity: number): SaleItem {
+  static calculateLine(
+    product: Product,
+    variant: ProductVariant,
+    quantity: number,
+    usePromotion: boolean = false
+  ): SaleItem {
     if (quantity <= 0) {
       throw new DomainError('La cantidad debe ser mayor a cero.');
     }
+
     if (!variant.active) {
-      throw new DomainError('Esta modalidad no esta disponible actualmente.');
+      throw new DomainError(
+        'Esta modalidad no esta disponible actualmente.'
+      );
     }
 
     const promotion = product.promotion;
 
-    if (promotion && promotion.requiredQuantity > 0) {
-      const promoUnits = Math.floor(quantity / promotion.requiredQuantity);
-      const remainderUnits = quantity % promotion.requiredQuantity;
-
-      if (promoUnits > 0) {
-        const promoTotal = Money.fromCents(promotion.totalPriceCents).multiply(promoUnits);
-        const remainderTotal = Money.fromCents(variant.unitPriceCents).multiply(remainderUnits);
-        const subtotal = promoTotal.add(remainderTotal);
-
-        return {
-          id: generateId('item'),
-          productId: product.id,
-          productNameSnapshot: product.name,
-          variantId: variant.id,
-          variantNameSnapshot: variant.name,
-          quantity,
-          unitPriceCents: variant.unitPriceCents,
-          subtotalCents: subtotal.valueInCents,
-          appliedPromotionLabel: promotion.label,
-        };
+    /**
+     * PROMOCION
+     * La promocion solo se aplica si el usuario la selecciono
+     * explicitamente.
+     *
+     * La cantidad representa cuantos paquetes promocionales
+     * se estan vendiendo.
+     */
+    if (usePromotion) {
+      if (!promotion || promotion.totalPriceCents <= 0) {
+        throw new DomainError(
+          'La promocion seleccionada no esta disponible.'
+        );
       }
+
+      const subtotal = Money.fromCents(
+        promotion.totalPriceCents
+      ).multiply(quantity);
+
+      return {
+        id: generateId('item'),
+        productId: product.id,
+        productNameSnapshot: product.name,
+        variantId: variant.id,
+        variantNameSnapshot: promotion.label,
+        quantity,
+        unitPriceCents: promotion.totalPriceCents,
+        subtotalCents: subtotal.valueInCents,
+        appliedPromotionLabel: promotion.label,
+      };
     }
 
-    const subtotal = Money.fromCents(variant.unitPriceCents).multiply(quantity);
+    const subtotal = Money.fromCents(
+      variant.unitPriceCents
+    ).multiply(quantity);
 
     return {
       id: generateId('item'),
@@ -62,14 +81,25 @@ export class SaleCalculator {
     };
   }
 
+  /**
+   * Calcula el total de la venta en dolares.
+   */
   static calculateTotalUsd(items: SaleItem[]): Money {
     return items.reduce(
-      (total, item) => total.add(Money.fromCents(item.subtotalCents)),
+      (total, item) =>
+        total.add(Money.fromCents(item.subtotalCents)),
       Money.zero()
     );
   }
 
-  static calculateTotalBs(totalUsd: Money, exchangeRate: number): Money {
+  /**
+   * Calcula el total de la venta en bolivares
+   * utilizando la tasa de cambio recibida.
+   */
+  static calculateTotalBs(
+    totalUsd: Money,
+    exchangeRate: number
+  ): Money {
     return totalUsd.toBolivares(exchangeRate);
   }
 }

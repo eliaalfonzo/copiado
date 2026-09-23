@@ -12,6 +12,8 @@ import {
   PackagePlus,
   AlertTriangle,
   CheckCircle2,
+  TrendingUp,
+  TrendingDown,
 } from 'lucide-react';
 import { MainLayout } from '@/presentation/layouts/MainLayout';
 import { Card } from '@/presentation/components/Card';
@@ -62,47 +64,75 @@ export function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)' }}>TASA OFICIAL BCV</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)' }}>TASA ACTUAL</span>
                 {status === 'updated' && (
                   <Badge tone="success">
                     <CheckCircle2 size={12} /> Conectado en vivo
                   </Badge>
                 )}
                 {status === 'loading' && <Badge tone="neutral">Consultando...</Badge>}
-                {status === 'stale' && <Badge tone="warning">Última tasa válida (sin conexión)</Badge>}
+                {status === 'stale' && <Badge tone="warning">Ultima tasa valida (sin conexion)</Badge>}
                 {status === 'manual' && <Badge tone="brand">Tasa manual activa</Badge>}
-                {status === 'error' && <Badge tone="danger">Error de conexión</Badge>}
+                {status === 'error' && <Badge tone="danger">Error de conexion</Badge>}
               </div>
+
               {rate ? (
-                <p style={{ margin: 0, fontSize: 32, fontWeight: 800, color: 'var(--color-brand-secondary)' }}>
-                  $1 = {rate.rate.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.
+                <p style={{ margin: 0, fontSize: 30, fontWeight: 800, color: 'var(--color-brand-secondary)' }}>
+                  $1 = {rate.rate.toLocaleString('es-VE', { minimumFractionDigits: 2 })} Bs.
                 </p>
               ) : (
-                <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>Sin datos aún</p>
+                <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>Sin datos aun</p>
               )}
 
-              {rate && !rate.isManual && (
-                <div style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <span>
-                    Proveedor: <strong style={{ color: 'var(--color-text)' }}>{rate.source}</strong>
-                  </span>
-                  <span>
-                    Última sincronización en vivo: <strong style={{ color: 'var(--color-text)' }}>{formatDateTime(rate.fetchedAt)}</strong>
-                  </span>
-                  <span>
-                    Fecha valor oficial BCV: <strong style={{ color: 'var(--color-text)' }}>{formatDate(rate.officialDate)}</strong>
+              {rate && typeof rate.changePercentage === 'number' && typeof rate.changeAmount === 'number' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                  <Badge tone={rate.changeAmount >= 0 ? 'success' : 'danger'}>
+                    {rate.changeAmount >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {rate.changeAmount >= 0 ? '+' : ''}
+                    {rate.changePercentage.toLocaleString('es-VE', { maximumFractionDigits: 2 })}% (
+                    {rate.changeAmount >= 0 ? '+' : ''}
+                    {rate.changeAmount.toLocaleString('es-VE', { maximumFractionDigits: 2 })} Bs.)
+                  </Badge>
+
+                  <span style={{ fontSize: 11.5, color: 'var(--color-text-muted)' }}>
+                    vs. tasa anterior ({rate.previousRate?.toLocaleString('es-VE', { minimumFractionDigits: 2 })} Bs.)
                   </span>
                 </div>
               )}
+
+              {rate && !rate.isManual && (
+                <div style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <span>
+                    Ultima verificacion en vivo:{' '}
+                    <strong style={{ color: 'var(--color-text)' }}>
+                      {formatDateTime(rate.fetchedAt)}
+                    </strong>
+                  </span>
+
+                  <span>
+                    Fecha valor BCV:{' '}
+                    <strong style={{ color: 'var(--color-text)' }}>
+                      {formatDate(rate.officialDate)}
+                    </strong>
+                    {' · '}
+                    {rate.source}
+                  </span>
+                </div>
+              )}
+
               {rate && rate.isManual && (
                 <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--color-text-muted)' }}>
-                  Tasa fijada manualmente. Puede administrarla desde Configuración.
+                  Tasa fijada manualmente. Puede administrarla desde Configuracion.
                 </p>
               )}
+
               {!rate && errorMessage && (
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--color-danger)' }}>{errorMessage}</p>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--color-danger)' }}>
+                  {errorMessage}
+                </p>
               )}
             </div>
+
             <Button variant="secondary" size="sm" onClick={() => void refresh()} loading={status === 'loading'}>
               <RefreshCw size={15} /> Verificar ahora
             </Button>
@@ -122,21 +152,49 @@ export function Dashboard() {
           <h2 style={{ fontSize: 15, margin: '0 0 10px', color: 'var(--color-text-secondary)' }}>
             Resumen de {currentPeriodLabel || 'este mes'}
           </h2>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-            <StatCard icon={DollarSign} tone="brand" label="Ventas del mes" value={formatUsd(summary.totalUsdCents)} hint={formatBs(summary.totalBsCents)} />
-            <StatCard icon={Users} label="Clientes atendidos" value={String(summary.clientsAttended)} />
-            <StatCard icon={Package} label="Servicios vendidos" value={String(summary.servicesSold)} />
-            <StatCard icon={Receipt} tone="success" label="Ticket promedio" value={formatUsd(summary.averageTicketCents)} />
+            <StatCard
+              icon={DollarSign}
+              tone="brand"
+              label="Ventas del mes"
+              value={formatUsd(summary.totalUsdCents)}
+              hint={formatBs(summary.totalBsCents)}
+            />
+
+            <StatCard
+              icon={Users}
+              label="Clientes atendidos"
+              value={String(summary.clientsAttended)}
+            />
+
+            <StatCard
+              icon={Package}
+              label="Servicios vendidos"
+              value={String(summary.servicesSold)}
+            />
+
+            <StatCard
+              icon={Receipt}
+              tone="success"
+              label="Ticket promedio"
+              value={formatUsd(summary.averageTicketCents)}
+            />
           </div>
         </div>
 
         {/* Grafico */}
         <Card>
           <h2 style={{ fontSize: 15, margin: '0 0 14px' }}>Evolucion de ventas</h2>
+
           {loading ? (
             <p style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>Cargando...</p>
           ) : sales.length === 0 ? (
-            <EmptyState icon={Receipt} title="Aun no hay ventas este mes" description="Cuando registre ventas, aqui vera su evolucion diaria." />
+            <EmptyState
+              icon={Receipt}
+              title="Aun no hay ventas este mes"
+              description="Cuando registre ventas, aqui vera su evolucion diaria."
+            />
           ) : (
             <div style={{ width: '100%', height: 260 }}>
               <ResponsiveContainer>
@@ -144,11 +202,23 @@ export function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis dataKey="day" stroke="var(--color-text-muted)" fontSize={12} />
                   <YAxis stroke="var(--color-text-muted)" fontSize={12} />
+
                   <Tooltip
-                    contentStyle={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}
+                    contentStyle={{
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 8,
+                    }}
                     formatter={(value: number) => [`$${value.toFixed(2)}`, 'Total']}
                   />
-                  <Line type="monotone" dataKey="total" stroke="#FF1493" strokeWidth={2.5} dot={{ r: 3 }} />
+
+                  <Line
+                    type="monotone"
+                    dataKey="total"
+                    stroke="#FF1493"
+                    strokeWidth={2.5}
+                    dot={{ r: 3 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -159,7 +229,15 @@ export function Dashboard() {
   );
 }
 
-function QuickAction({ icon: Icon, label, onClick }: { icon: typeof ShoppingCart; label: string; onClick: () => void }) {
+function QuickAction({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: typeof ShoppingCart;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}
@@ -190,6 +268,7 @@ function QuickAction({ icon: Icon, label, onClick }: { icon: typeof ShoppingCart
       >
         <Icon size={19} />
       </div>
+
       <span style={{ fontSize: 13, fontWeight: 600 }}>{label}</span>
     </button>
   );

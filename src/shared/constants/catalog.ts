@@ -1,9 +1,10 @@
 /**
- * Catalogo inicial de Copiado Alfonzo. Estos valores se usan UNICAMENTE
- * la primera vez que la aplicacion se ejecuta, para sembrar el
- * almacenamiento local. A partir de ahi, todo el catalogo se lee y
- * escribe a traves de ProductRepository; ningun componente debe volver
- * a importar estas constantes para mostrar precios.
+ * Catalogo inicial de Copiado Alfonzo. Estos valores se usan la
+ * primera vez que la aplicacion se ejecuta (o cuando el trabajador usa
+ * "Restablecer productos por defecto" en la seccion Productos), para
+ * sembrar el almacenamiento local. A partir de ahi, todo el catalogo
+ * se lee y escribe a traves de ProductRepository; ningun componente
+ * debe volver a importar estas constantes para mostrar precios.
  */
 import type { Product } from '@/domain/entities/Product';
 
@@ -47,11 +48,18 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: 'fotografias',
     active: true,
     createdAt: new Date().toISOString(),
-    variants: [{ id: 'var_fotografias_unico', name: 'Estandar', unitPriceCents: 0, active: true }],
+    // Fotografia individual (fuera de la promocion): $0.90 cada una.
+    variants: [{ id: 'var_fotografias_individual', name: 'Fotografia individual', unitPriceCents: 90, active: true }],
+    // La promocion es un PAQUETE fijo (tipo "foto escolar": 8 fotos en
+    // una misma hoja), NO una tarifa por volumen de fotos individuales.
+    // Por eso su precio no se deriva del precio unitario de arriba: al
+    // seleccionar la promocion, la cantidad que se captura representa
+    // cuantos PAQUETES se estan vendiendo (normalmente 1), cada uno a
+    // este precio fijo, sin importar el precio de la fotografia suelta.
     promotion: {
-      id: 'promo_fotos_9',
-      label: '9 fotografias',
-      requiredQuantity: 9,
+      id: 'promo_fotos_8',
+      label: '8 fotografias',
+      requiredQuantity: 8,
       totalPriceCents: 70,
     },
   },

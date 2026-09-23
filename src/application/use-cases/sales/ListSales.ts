@@ -3,7 +3,7 @@ import type { Sale } from '@/domain/entities/Sale';
 import { getMonthlyPeriodKey } from '@/shared/utils/date';
 
 export class ListSales {
-  constructor(private readonly saleRepository: SaleRepository) {}
+  constructor(private readonly saleRepository: SaleRepository) { }
 
   async executeCurrentPeriod(): Promise<Sale[]> {
     const period = getMonthlyPeriodKey(new Date());

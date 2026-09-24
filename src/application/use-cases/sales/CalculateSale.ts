@@ -5,16 +5,13 @@ import { Money } from '@/domain/value-objects/Money';
 
 export interface CalculateSaleResult {
   items: SaleItem[];
+  subtotalUsd: Money;
+  discountPercentage: number;
+  discountAmount: Money;
   totalUsd: Money;
   totalBs: Money;
 }
 
-/**
- * Caso de uso puro de calculo (sin persistencia).
- *
- * Se utiliza mientras el trabajador arma el carrito para mostrar
- * el total en tiempo real sin necesidad de guardar la venta todavia.
- */
 export class CalculateSale {
   addLine(
     product: Product,
@@ -23,32 +20,17 @@ export class CalculateSale {
     existingItems: SaleItem[],
     usePromotion: boolean = false
   ): SaleItem[] {
-    const variant = product.variants.find(
-      (v) => v.id === variantId
-    );
+    const variant = product.variants.find((v) => v.id === variantId);
 
     if (!variant) {
       throw new Error('Modalidad no encontrada');
     }
 
-    const newItem = SaleCalculator.calculateLine(
-      product,
-      variant,
-      quantity,
-      usePromotion
-    );
+    const newItem = SaleCalculator.calculateLine(product, variant, quantity, usePromotion);
 
     return [...existingItems, newItem];
   }
 
-  /**
-   * Recalcula una linea existente.
-   *
-   * Si la linea fue creada como promocion, se mantiene como promocion
-   * al aumentar o disminuir su cantidad.
-   *
-   * Si era una venta individual, continua usando el precio normal.
-   */
   recalculateLine(
     product: Product,
     variantId: string,
@@ -57,28 +39,16 @@ export class CalculateSale {
     items: SaleItem[],
     usePromotion?: boolean
   ): SaleItem[] {
-    const variant = product.variants.find(
-      (v) => v.id === variantId
-    );
+    const variant = product.variants.find((v) => v.id === variantId);
 
     if (!variant) {
       throw new Error('Modalidad no encontrada');
     }
 
-    const existingItem = items.find(
-      (item) => item.id === itemId
-    );
+    const existingItem = items.find((item) => item.id === itemId);
 
-    /**
-     * Si no recibimos explicitamente usePromotion, intentamos
-     * conservar el tipo de venta de la linea existente.
-     *
-     * Esto permite que los botones + y - de una promocion
-     * sigan calculando el precio promocional.
-     */
     const shouldUsePromotion =
-      usePromotion ??
-      Boolean(existingItem?.appliedPromotionLabel);
+      usePromotion ?? Boolean(existingItem?.appliedPromotionLabel);
 
     const updated = SaleCalculator.calculateLine(
       product,
@@ -97,36 +67,31 @@ export class CalculateSale {
     );
   }
 
-  /**
-   * Elimina una linea del carrito.
-   */
-  removeLine(
-    itemId: string,
-    items: SaleItem[]
-  ): SaleItem[] {
-    return items.filter(
-      (item) => item.id !== itemId
-    );
+  removeLine(itemId: string, items: SaleItem[]): SaleItem[] {
+    return items.filter((item) => item.id !== itemId);
   }
 
-  /**
-   * Calcula los totales de la venta.
-   */
   totals(
     items: SaleItem[],
-    exchangeRate: number
+    exchangeRate: number,
+    discountPercentage = 0
   ): CalculateSaleResult {
-    const totalUsd =
-      SaleCalculator.calculateTotalUsd(items);
+    const subtotalUsd = SaleCalculator.calculateTotalUsd(items);
 
-    const totalBs =
-      SaleCalculator.calculateTotalBs(
-        totalUsd,
-        exchangeRate
-      );
+    const discountAmount = SaleCalculator.calculateDiscount(
+      subtotalUsd,
+      discountPercentage
+    );
+
+    const totalUsd = subtotalUsd.subtract(discountAmount);
+
+    const totalBs = SaleCalculator.calculateTotalBs(totalUsd, exchangeRate);
 
     return {
       items,
+      subtotalUsd,
+      discountPercentage,
+      discountAmount,
       totalUsd,
       totalBs,
     };

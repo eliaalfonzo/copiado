@@ -76,22 +76,41 @@ export class JsPdfGeneratorAdapter implements PdfGenerator {
     });
 
     const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 30;
+    const discountAmountCents = sale.discountAmountCents ?? 0;
+    const hasDiscount = discountAmountCents > 0;
 
+    let labelY = finalY;
     doc.setFontSize(12);
     doc.setTextColor(...GRAY_TEXT);
-    doc.text('TOTAL USD', marginX, finalY);
-    doc.text('TASA UTILIZADA', marginX, finalY + 18);
-    doc.text('TOTAL Bs', marginX, finalY + 36);
+
+    if (hasDiscount) {
+      doc.text('SUBTOTAL', marginX, labelY);
+      doc.setFontSize(12);
+      doc.setTextColor(...DARK_TEXT);
+      doc.text(formatUsd(sale.subtotalUsdCents ?? sale.totalUsdCents), 220, labelY);
+      labelY += 18;
+
+      doc.setTextColor(...GRAY_TEXT);
+      doc.text(`DESCUENTO (${sale.discountPercentage ?? 0}%)`, marginX, labelY);
+      doc.setTextColor(...BRAND_FUCHSIA);
+      doc.text(`-${formatUsd(discountAmountCents)}`, 220, labelY);
+      labelY += 18;
+      doc.setTextColor(...GRAY_TEXT);
+    }
+
+    doc.text('TOTAL USD', marginX, labelY);
+    doc.text('TASA UTILIZADA', marginX, labelY + 18);
+    doc.text('TOTAL Bs', marginX, labelY + 36);
 
     doc.setFontSize(14);
     doc.setTextColor(...BRAND_FUCHSIA);
-    doc.text(formatUsd(sale.totalUsdCents), 220, finalY);
+    doc.text(formatUsd(sale.totalUsdCents), 220, labelY);
     doc.setTextColor(...DARK_TEXT);
     doc.setFontSize(12);
-    doc.text(`Bs. ${sale.exchangeRateUsed.toLocaleString('es-VE', { minimumFractionDigits: 2 })}/USD`, 220, finalY + 18);
+    doc.text(`Bs. ${sale.exchangeRateUsed.toLocaleString('es-VE', { minimumFractionDigits: 2 })}/USD`, 220, labelY + 18);
     doc.setFontSize(14);
     doc.setTextColor(...BRAND_FUCHSIA);
-    doc.text(formatBs(sale.totalBsCents), 220, finalY + 36);
+    doc.text(formatBs(sale.totalBsCents), 220, labelY + 36);
 
     doc.setFontSize(9);
     doc.setTextColor(...GRAY_TEXT);

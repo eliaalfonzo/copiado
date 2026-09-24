@@ -19,8 +19,8 @@ export function useSales() {
   }, [reload]);
 
   const createSale = useCallback(
-    async (clientId: string, items: SaleItem[], exchangeRate: number): Promise<Sale> => {
-      const sale = await container.createSale.execute({ clientId, items, exchangeRate });
+    async (clientId: string, items: SaleItem[], exchangeRate: number, discountPercentage = 0): Promise<Sale> => {
+      const sale = await container.createSale.execute({ clientId, items, exchangeRate, discountPercentage });
       await reload();
       return sale;
     },

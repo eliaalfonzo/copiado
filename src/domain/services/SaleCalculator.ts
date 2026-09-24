@@ -5,15 +5,6 @@ import type { SaleItem } from '@/domain/entities/SaleItem';
 import { generateId } from '@/shared/utils/id';
 import { DomainError } from '@/domain/errors/DomainError';
 
-/**
- * Servicio de dominio responsable UNICAMENTE del calculo de una linea
- * de venta (SRP).
- *
- * No sabe nada de almacenamiento, PDF, Excel ni React.
- *
- * Las promociones se aplican EXPLICITAMENTE cuando el usuario selecciona
- * la modalidad promocional.
- */
 export class SaleCalculator {
   static calculateLine(
     product: Product,
@@ -26,31 +17,17 @@ export class SaleCalculator {
     }
 
     if (!variant.active) {
-      throw new DomainError(
-        'Esta modalidad no esta disponible actualmente.'
-      );
+      throw new DomainError('Esta modalidad no esta disponible actualmente.');
     }
 
     const promotion = product.promotion;
 
-    /**
-     * PROMOCION
-     * La promocion solo se aplica si el usuario la selecciono
-     * explicitamente.
-     *
-     * La cantidad representa cuantos paquetes promocionales
-     * se estan vendiendo.
-     */
     if (usePromotion) {
       if (!promotion || promotion.totalPriceCents <= 0) {
-        throw new DomainError(
-          'La promocion seleccionada no esta disponible.'
-        );
+        throw new DomainError('La promocion seleccionada no esta disponible.');
       }
 
-      const subtotal = Money.fromCents(
-        promotion.totalPriceCents
-      ).multiply(quantity);
+      const subtotal = Money.fromCents(promotion.totalPriceCents).multiply(quantity);
 
       return {
         id: generateId('item'),
@@ -65,9 +42,7 @@ export class SaleCalculator {
       };
     }
 
-    const subtotal = Money.fromCents(
-      variant.unitPriceCents
-    ).multiply(quantity);
+    const subtotal = Money.fromCents(variant.unitPriceCents).multiply(quantity);
 
     return {
       id: generateId('item'),
@@ -81,25 +56,26 @@ export class SaleCalculator {
     };
   }
 
-  /**
-   * Calcula el total de la venta en dolares.
-   */
   static calculateTotalUsd(items: SaleItem[]): Money {
     return items.reduce(
-      (total, item) =>
-        total.add(Money.fromCents(item.subtotalCents)),
+      (total, item) => total.add(Money.fromCents(item.subtotalCents)),
       Money.zero()
     );
   }
 
-  /**
-   * Calcula el total de la venta en bolivares
-   * utilizando la tasa de cambio recibida.
-   */
-  static calculateTotalBs(
-    totalUsd: Money,
-    exchangeRate: number
-  ): Money {
+  static calculateTotalBs(totalUsd: Money, exchangeRate: number): Money {
     return totalUsd.toBolivares(exchangeRate);
+  }
+
+  static calculateDiscount(subtotal: Money, discountPercentage: number): Money {
+    if (!discountPercentage || discountPercentage <= 0) {
+      return Money.zero();
+    }
+
+    if (discountPercentage > 100) {
+      throw new DomainError('El descuento no puede ser mayor a 100%.');
+    }
+
+    return subtotal.multiply(discountPercentage / 100);
   }
 }

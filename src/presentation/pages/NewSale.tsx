@@ -11,14 +11,15 @@ import {
   CheckCircle2,
   FileDown,
   RefreshCw,
+  Percent,
 } from 'lucide-react';
-
 import { MainLayout } from '@/presentation/layouts/MainLayout';
 import { Card } from '@/presentation/components/Card';
 import { Button } from '@/presentation/components/Button';
 import { Input } from '@/presentation/components/Input';
 import { Modal } from '@/presentation/components/Modal';
 import { Badge } from '@/presentation/components/Badge';
+import { Switch } from '@/presentation/components/Switch';
 import { StepIndicator } from '@/presentation/components/StepIndicator';
 import { CurrencyDisplay } from '@/presentation/components/CurrencyDisplay';
 import { EmptyState } from '@/presentation/components/EmptyState';
@@ -47,6 +48,8 @@ const STEPS = [
 ];
 
 type SaleMode = 'individual' | 'promotion';
+
+const DEFAULT_DISCOUNT_PERCENTAGE = '10';
 
 export function NewSale() {
   const { clients, createClient } = useClients();
@@ -96,6 +99,26 @@ export function NewSale() {
   const [quantityInput, setQuantityInput] =
     useState('1');
 
+  // =========================================================
+  // DESCUENTO POR VENTA
+  // =========================================================
+
+  // Desactivado por defecto.
+  // Al activarlo, comienza mostrando 10%, pero el trabajador
+  // puede modificar libremente el porcentaje entre 0 y 100.
+  const [discountEnabled, setDiscountEnabled] =
+    useState(false);
+
+  const [discountPercentageInput, setDiscountPercentageInput] =
+    useState(DEFAULT_DISCOUNT_PERCENTAGE);
+
+  const [discountError, setDiscountError] =
+    useState<string | undefined>(undefined);
+
+  // =========================================================
+  // ESTADO DE LA VENTA
+  // =========================================================
+
   const [submitting, setSubmitting] =
     useState(false);
 
@@ -107,13 +130,43 @@ export function NewSale() {
 
   const exchangeRate = rate?.rate ?? 0;
 
+  // =========================================================
+  // DESCUENTO EFECTIVO
+  // =========================================================
+
+  const effectiveDiscountPercentage = useMemo(() => {
+    if (!discountEnabled) return 0;
+
+    const parsed = parseFloat(
+      discountPercentageInput.replace(',', '.')
+    );
+
+    if (Number.isNaN(parsed) || parsed < 0) {
+      return 0;
+    }
+
+    return Math.min(parsed, 100);
+  }, [
+    discountEnabled,
+    discountPercentageInput,
+  ]);
+
+  // =========================================================
+  // TOTALES
+  // =========================================================
+
   const totals = useMemo(
     () =>
       calculateSale.totals(
         items,
-        exchangeRate
+        exchangeRate,
+        effectiveDiscountPercentage
       ),
-    [items, exchangeRate]
+    [
+      items,
+      exchangeRate,
+      effectiveDiscountPercentage,
+    ]
   );
 
   const filteredClients = clients.filter((c) =>
@@ -127,6 +180,10 @@ export function NewSale() {
   function goToStep(index: number) {
     setStepIndex(index);
   }
+
+  // =========================================================
+  // CLIENTE
+  // =========================================================
 
   async function handleCreateClient() {
     if (
@@ -148,6 +205,7 @@ export function NewSale() {
         );
 
       setSelectedClient(client);
+
       setNewClientModalOpen(false);
 
       setNewClientForm({
@@ -171,6 +229,10 @@ export function NewSale() {
       );
     }
   }
+
+  // =========================================================
+  // PRODUCTOS
+  // =========================================================
 
   function openProduct(
     product: Product
@@ -293,8 +355,67 @@ export function NewSale() {
     );
   }
 
+  // =========================================================
+  // DESCUENTO
+  // =========================================================
+
+  function handleToggleDiscount(
+    checked: boolean
+  ) {
+    setDiscountEnabled(checked);
+    setDiscountError(undefined);
+
+    if (
+      checked &&
+      !discountPercentageInput.trim()
+    ) {
+      setDiscountPercentageInput(
+        DEFAULT_DISCOUNT_PERCENTAGE
+      );
+    }
+  }
+
+  function handleDiscountInputChange(
+    value: string
+  ) {
+    setDiscountPercentageInput(value);
+
+    const parsed = parseFloat(
+      value.replace(',', '.')
+    );
+
+    if (
+      value.trim() === '' ||
+      Number.isNaN(parsed) ||
+      parsed < 0 ||
+      parsed > 100
+    ) {
+      setDiscountError(
+        'Ingrese un porcentaje entre 0 y 100.'
+      );
+    } else {
+      setDiscountError(undefined);
+    }
+  }
+
+  // =========================================================
+  // FINALIZAR VENTA
+  // =========================================================
+
   async function handleFinalizeSale() {
     if (!selectedClient) return;
+
+    if (
+      discountEnabled &&
+      discountError
+    ) {
+      showToast(
+        'Revise el porcentaje de descuento antes de continuar.',
+        'error'
+      );
+
+      return;
+    }
 
     setSubmitting(true);
 
@@ -303,7 +424,8 @@ export function NewSale() {
         await createSale(
           selectedClient.id,
           items,
-          exchangeRate
+          exchangeRate,
+          effectiveDiscountPercentage
         );
 
       setCompletedSale(sale);
@@ -324,6 +446,10 @@ export function NewSale() {
     }
   }
 
+  // =========================================================
+  // PDF
+  // =========================================================
+
   async function handleDownloadInvoice() {
     if (!completedSale) return;
 
@@ -342,11 +468,14 @@ export function NewSale() {
         document.createElement('a');
 
       link.href = url;
+
       link.download =
         `comprobante-${completedSale.id}.pdf`;
 
       document.body.appendChild(link);
+
       link.click();
+
       document.body.removeChild(link);
 
       URL.revokeObjectURL(url);
@@ -362,6 +491,10 @@ export function NewSale() {
     }
   }
 
+  // =========================================================
+  // NUEVA VENTA
+  // =========================================================
+
   function startNewSale() {
     setStepIndex(0);
     setSelectedClient(null);
@@ -372,7 +505,18 @@ export function NewSale() {
     setActiveVariantId('');
     setSaleMode('individual');
     setQuantityInput('1');
+
+    // Reiniciar descuento
+    setDiscountEnabled(false);
+    setDiscountPercentageInput(
+      DEFAULT_DISCOUNT_PERCENTAGE
+    );
+    setDiscountError(undefined);
   }
+
+  // =========================================================
+  // VENTA COMPLETADA
+  // =========================================================
 
   if (completedSale) {
     return (
@@ -417,6 +561,30 @@ export function NewSale() {
             }
           </p>
 
+          {completedSale.discountAmountCents >
+            0 && (
+              <p
+                style={{
+                  margin:
+                    '0 0 6px',
+                  fontSize: 12.5,
+                  color:
+                    'var(--color-brand-secondary)',
+                  fontWeight: 600,
+                }}
+              >
+                Descuento aplicado:{' '}
+                {
+                  completedSale.discountPercentage
+                }
+                % (-
+                {formatUsd(
+                  completedSale.discountAmountCents
+                )}
+                )
+              </p>
+            )}
+
           <CurrencyDisplay
             usdCents={
               completedSale.totalUsdCents
@@ -459,6 +627,10 @@ export function NewSale() {
     );
   }
 
+  // =========================================================
+  // VISTA PRINCIPAL
+  // =========================================================
+
   return (
     <MainLayout
       title="Nueva venta"
@@ -476,6 +648,10 @@ export function NewSale() {
           steps={STEPS}
           currentIndex={stepIndex}
         />
+
+        {/* =====================================================
+            PASO 1 — CLIENTE
+        ===================================================== */}
 
         {stepIndex === 0 && (
           <Card>
@@ -664,6 +840,10 @@ export function NewSale() {
           </Card>
         )}
 
+        {/* =====================================================
+            PASO 2 — SERVICIOS
+        ===================================================== */}
+
         {stepIndex === 1 && (
           <div
             style={{
@@ -815,6 +995,10 @@ export function NewSale() {
                 )}
               </div>
             </Card>
+
+            {/* =================================================
+                CARRITO
+            ================================================= */}
 
             <Card>
               <h2
@@ -977,6 +1161,108 @@ export function NewSale() {
               )}
             </Card>
 
+            {/* =================================================
+                DESCUENTO DE LA VENTA
+            ================================================= */}
+
+            <Card>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent:
+                    'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}
+              >
+                <Switch
+                  checked={discountEnabled}
+                  onChange={
+                    handleToggleDiscount
+                  }
+                  label="Aplicar descuento a esta venta"
+                />
+
+                {discountEnabled && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems:
+                        'center',
+                      gap: 8,
+                    }}
+                  >
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      step="0.5"
+                      value={
+                        discountPercentageInput
+                      }
+                      onChange={(e) =>
+                        handleDiscountInputChange(
+                          e.target.value
+                        )
+                      }
+                      error={discountError}
+                      style={{
+                        maxWidth: 90,
+                        textAlign:
+                          'center',
+                      }}
+                      aria-label="Porcentaje de descuento"
+                    />
+
+                    <Percent
+                      size={16}
+                      color="var(--color-text-secondary)"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {discountEnabled &&
+                !discountError &&
+                totals.discountAmount
+                  .valueInCents > 0 && (
+                  <p
+                    style={{
+                      margin:
+                        '10px 0 0',
+                      fontSize: 12.5,
+                      color:
+                        'var(--color-text-secondary)',
+                    }}
+                  >
+                    Descuento:{' '}
+                    <strong
+                      style={{
+                        color:
+                          'var(--color-brand-secondary)',
+                      }}
+                    >
+                      -
+                      {formatUsd(
+                        totals.discountAmount
+                          .valueInCents
+                      )}
+                    </strong>{' '}
+                    sobre un subtotal de{' '}
+                    {formatUsd(
+                      totals.subtotalUsd
+                        .valueInCents
+                    )}
+                    .
+                  </p>
+                )}
+            </Card>
+
+            {/* =================================================
+                NAVEGACION
+            ================================================= */}
+
             <div
               style={{
                 display: 'flex',
@@ -1008,6 +1294,10 @@ export function NewSale() {
             </div>
           </div>
         )}
+
+        {/* =====================================================
+            PASO 3 — CONFIRMACION
+        ===================================================== */}
 
         {stepIndex === 2 && (
           <Card>
@@ -1104,6 +1394,76 @@ export function NewSale() {
                 margin: '14px 0',
               }}
             />
+
+            {/* =================================================
+                RESUMEN DEL DESCUENTO
+            ================================================= */}
+
+            {totals.discountAmount
+              .valueInCents > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection:
+                      'column',
+                    gap: 4,
+                    marginBottom: 10,
+                    fontSize: 13.5,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent:
+                        'space-between',
+                      color:
+                        'var(--color-text-secondary)',
+                    }}
+                  >
+                    <span>
+                      Subtotal
+                    </span>
+
+                    <span>
+                      {formatUsd(
+                        totals.subtotalUsd
+                          .valueInCents
+                      )}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent:
+                        'space-between',
+                      color:
+                        'var(--color-brand-secondary)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <span>
+                      Descuento (
+                      {
+                        totals.discountPercentage
+                      }
+                      %)
+                    </span>
+
+                    <span>
+                      -
+                      {formatUsd(
+                        totals.discountAmount
+                          .valueInCents
+                      )}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+            {/* =================================================
+                TOTAL
+            ================================================= */}
 
             <div
               style={{
@@ -1215,7 +1575,10 @@ export function NewSale() {
         )}
       </div>
 
-      {/* Total flotante siempre visible mientras se arma la venta */}
+      {/* =======================================================
+          TOTAL FLOTANTE
+      ======================================================= */}
+
       {stepIndex < 2 &&
         items.length > 0 && (
           <div
@@ -1278,7 +1641,10 @@ export function NewSale() {
           </div>
         )}
 
-      {/* Modal para seleccionar producto y modalidad */}
+      {/* =======================================================
+          MODAL PRODUCTO
+      ======================================================= */}
+
       <Modal
         open={!!activeProduct}
         onClose={() =>
@@ -1315,7 +1681,10 @@ export function NewSale() {
               gap: 14,
             }}
           >
-            {/* Seleccion de modalidad */}
+            {/* =================================================
+                SELECCION DE MODALIDAD
+            ================================================= */}
+
             {activeProduct.promotion ? (
               <div>
                 <p
@@ -1338,7 +1707,8 @@ export function NewSale() {
                     gap: 10,
                   }}
                 >
-                  {/* Venta individual */}
+                  {/* VENTA INDIVIDUAL */}
+
                   <button
                     type="button"
                     onClick={() =>
@@ -1394,7 +1764,8 @@ export function NewSale() {
                     </p>
                   </button>
 
-                  {/* Promocion */}
+                  {/* PROMOCION */}
+
                   <button
                     type="button"
                     onClick={() =>
@@ -1469,7 +1840,8 @@ export function NewSale() {
                 </div>
               </div>
             ) : (
-              /* Productos sin promocion */
+              /* PRODUCTOS SIN PROMOCION */
+
               activeProduct.variants.length >
               1 && (
                 <div>
@@ -1499,9 +1871,7 @@ export function NewSale() {
                       .map((variant) => (
                         <button
                           type="button"
-                          key={
-                            variant.id
-                          }
+                          key={variant.id}
                           onClick={() =>
                             setActiveVariantId(
                               variant.id
@@ -1543,7 +1913,10 @@ export function NewSale() {
               )
             )}
 
-            {/* Informacion del paquete */}
+            {/* =================================================
+                INFORMACION DEL PAQUETE
+            ================================================= */}
+
             {activeProduct.promotion &&
               saleMode ===
               'promotion' && (
@@ -1589,7 +1962,10 @@ export function NewSale() {
                 </div>
               )}
 
-            {/* Variante para productos con promocion */}
+            {/* =================================================
+                VARIANTE PARA PRODUCTOS CON PROMOCION
+            ================================================= */}
+
             {activeProduct.promotion &&
               activeProduct.variants.length >
               1 && (
@@ -1620,9 +1996,7 @@ export function NewSale() {
                       .map((variant) => (
                         <button
                           type="button"
-                          key={
-                            variant.id
-                          }
+                          key={variant.id}
                           onClick={() =>
                             setActiveVariantId(
                               variant.id
@@ -1663,7 +2037,10 @@ export function NewSale() {
                 </div>
               )}
 
-            {/* Cantidad */}
+            {/* =================================================
+                CANTIDAD
+            ================================================= */}
+
             <div>
               <p
                 style={{
@@ -1710,7 +2087,9 @@ export function NewSale() {
                 <Input
                   type="number"
                   min={1}
-                  value={quantityInput}
+                  value={
+                    quantityInput
+                  }
                   onChange={(e) =>
                     setQuantityInput(
                       e.target.value
@@ -1741,7 +2120,10 @@ export function NewSale() {
               </div>
             </div>
 
-            {/* Vista previa del calculo */}
+            {/* =================================================
+                VISTA PREVIA
+            ================================================= */}
+
             <CalculationPreview
               product={activeProduct}
               variantId={activeVariantId}
@@ -1756,11 +2138,16 @@ export function NewSale() {
         )}
       </Modal>
 
-      {/* Modal nuevo cliente */}
+      {/* =======================================================
+          MODAL NUEVO CLIENTE
+      ======================================================= */}
+
       <Modal
         open={newClientModalOpen}
         onClose={() =>
-          setNewClientModalOpen(false)
+          setNewClientModalOpen(
+            false
+          )
         }
         title="Nuevo cliente"
         footer={
@@ -1808,11 +2195,13 @@ export function NewSale() {
 
               if (
                 newClientNameError &&
-                (isValidFullName(
-                  e.target.value
-                ) ||
+                (
+                  isValidFullName(
+                    e.target.value
+                  ) ||
                   e.target.value.trim() ===
-                  '')
+                  ''
+                )
               ) {
                 setNewClientNameError(
                   undefined
@@ -1833,7 +2222,8 @@ export function NewSale() {
             onChange={(e) =>
               setNewClientForm({
                 ...newClientForm,
-                phone: e.target.value,
+                phone:
+                  e.target.value,
               })
             }
           />
@@ -1846,7 +2236,8 @@ export function NewSale() {
             onChange={(e) =>
               setNewClientForm({
                 ...newClientForm,
-                email: e.target.value,
+                email:
+                  e.target.value,
               })
             }
           />
@@ -1855,6 +2246,10 @@ export function NewSale() {
     </MainLayout>
   );
 }
+
+// =============================================================
+// BOTON DE ICONO
+// =============================================================
 
 function IconButton({
   children,
@@ -1891,6 +2286,10 @@ function IconButton({
   );
 }
 
+// =============================================================
+// PRECIO DE LA PRIMERA VARIANTE ACTIVA
+// =============================================================
+
 function getFirstActiveVariantPrice(
   product: Product
 ): number {
@@ -1903,6 +2302,10 @@ function getFirstActiveVariantPrice(
     variant?.unitPriceCents ?? 0
   );
 }
+
+// =============================================================
+// VISTA PREVIA DEL CALCULO
+// =============================================================
 
 function CalculationPreview({
   product,
@@ -1927,7 +2330,10 @@ function CalculationPreview({
     return null;
   }
 
-  /* PROMOCION COMO PAQUETE FIJO */
+  // =========================================================
+  // PROMOCION COMO PAQUETE FIJO
+  // =========================================================
+
   if (
     saleMode === 'promotion' &&
     product.promotion
@@ -1979,7 +2385,10 @@ function CalculationPreview({
     );
   }
 
-  /* VENTA INDIVIDUAL */
+  // =========================================================
+  // VENTA INDIVIDUAL
+  // =========================================================
+
   if (!variant) {
     return null;
   }

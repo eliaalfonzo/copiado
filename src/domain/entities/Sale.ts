@@ -7,6 +7,17 @@ export interface Sale {
   clientId: string;
   clientNameSnapshot: string;
   items: SaleItem[];
+  /** Suma de los subtotales de los items, ANTES de aplicar el descuento. */
+  subtotalUsdCents: number;
+  /**
+   * Porcentaje de descuento aplicado a esta venta (0 si no se aplico
+   * ninguno). Se captura manualmente por el trabajador cuando el
+   * trabajo lo amerita (ej: documentos grandes), nunca automatico.
+   */
+  discountPercentage: number;
+  /** Monto del descuento en centavos de USD, ya calculado y congelado. */
+  discountAmountCents: number;
+  /** Total final DESPUES del descuento (lo que realmente se cobro). */
   totalUsdCents: number;
   totalBsCents: number;
   exchangeRateUsed: number;

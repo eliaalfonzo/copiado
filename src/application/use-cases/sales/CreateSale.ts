@@ -11,6 +11,8 @@ export interface CreateSaleInput {
   clientId: string;
   items: SaleItem[];
   exchangeRate: number;
+  /** Porcentaje de descuento (0-100). Opcional; 0 o ausente = sin descuento. */
+  discountPercentage?: number;
 }
 
 export class CreateSale {
@@ -32,9 +34,20 @@ export class CreateSale {
       throw new DomainError('Debe seleccionar un cliente para la venta.');
     }
 
-    const totalUsd = SaleCalculator.calculateTotalUsd(input.items);
-    if (totalUsd.isZero() || totalUsd.isNegative()) {
+    const discountPercentage = input.discountPercentage ?? 0;
+    if (discountPercentage < 0 || discountPercentage > 100) {
+      throw new DomainError('El descuento debe estar entre 0% y 100%.');
+    }
+
+    const subtotalUsd = SaleCalculator.calculateTotalUsd(input.items);
+    if (subtotalUsd.isZero() || subtotalUsd.isNegative()) {
       throw new DomainError('El total de la venta debe ser mayor a cero.');
+    }
+
+    const discountAmount = SaleCalculator.calculateDiscount(subtotalUsd, discountPercentage);
+    const totalUsd = subtotalUsd.subtract(discountAmount);
+    if (totalUsd.isZero() || totalUsd.isNegative()) {
+      throw new DomainError('El descuento no puede dejar el total de la venta en cero o negativo.');
     }
     const totalBs = SaleCalculator.calculateTotalBs(totalUsd, input.exchangeRate);
 
@@ -43,6 +56,9 @@ export class CreateSale {
       clientId: client.id,
       clientNameSnapshot: client.fullName,
       items: input.items,
+      subtotalUsdCents: subtotalUsd.valueInCents,
+      discountPercentage,
+      discountAmountCents: discountAmount.valueInCents,
       totalUsdCents: totalUsd.valueInCents,
       totalBsCents: totalBs.valueInCents,
       exchangeRateUsed: input.exchangeRate,
